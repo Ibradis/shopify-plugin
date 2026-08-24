@@ -33,6 +33,36 @@
 Le connecteur ne connaît ni Shopify ni Prisma. Il est testable seul et
 réutilisable sur un autre socle.
 
+## Routes
+
+| Route | Rôle | Accès |
+| --- | --- | --- |
+| `app/_index` | Tableau de bord des paiements | Admin Shopify |
+| `app/settings` | Identifiants Djomy, méthodes, test de connexion | Admin Shopify |
+| `webhooks` | Conformité RGPD, désinstallation, `orders/create` | HMAC Shopify |
+| `webhooks/djomy/:shop` | Notifications Djomy | Signature Djomy |
+| `pay/:reference` | Saisie du numéro, redirection vers Djomy | Référence-jeton |
+| `pay/:reference/retour` | Statut réel après retour du portail | Référence-jeton |
+
+La référence de paiement fait 24 caractères hexadécimaux aléatoires : elle sert
+de jeton d'accès aux pages publiques, qui n'ont pas de session Shopify.
+
+## Couches
+
+```
+routes/            adaptateurs HTTP, aucune décision métier
+  ↓
+lib/paiements/     service.ts, reconciliation.ts, commande-manuelle.ts
+  ↓                (logique métier pure, dépendances injectées)
+lib/djomy/         connecteur Djomy
+  ↓
+*.server.ts        adaptateurs Prisma et Admin API Shopify
+```
+
+Le service de paiement reçoit son dépôt, sa passerelle de commande et son
+client Djomy par injection. Les tests s'exécutent donc sans base de données ni
+appel réseau.
+
 ## Authentification Djomy
 
 ```
