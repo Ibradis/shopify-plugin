@@ -47,6 +47,27 @@ pourrait produire un double débit.
 **Traitement :** unicité de `merchantPaymentReference` et de `eventId` en
 base. Question Q4 sur les limites de débit.
 
+## Dette de vérification
+
+### V1 — Adaptateurs non couverts par les tests unitaires
+
+`app/lib/marchand/depot.server.ts`, `app/lib/paiements/depot.server.ts` et
+`app/lib/paiements/commandes.server.ts` sont exclus de la mesure de couverture :
+ils ne portent aucune décision métier, mais exigent une base PostgreSQL et une
+session Shopify réelles.
+
+Ils ne sont donc **pas vérifiés à ce jour**. La recette d'intégration (phase P5)
+doit les exercer, en particulier :
+
+- l'unicité de `merchantPaymentReference` sous insertion concurrente ;
+- l'unicité de `eventId` comme garde-fou anti-rejeu ;
+- `orderMarkAsPaid` et l'ajout de note sans écrasement de la note existante.
+
+### V2 — Aucun appel réel à Djomy
+
+Toute la vérification repose sur des doubles de test. Rien n'a été confronté au
+bac à sable Djomy faute de clés.
+
 ## Contraintes d'exploitation
 
 ### D6 — Exigences Shopify pour le canal offsite

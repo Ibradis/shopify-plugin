@@ -1,5 +1,29 @@
 # Journal des modifications
 
+## 2026-08-24 — Application Shopify et canal manuel
+
+### Ajouté
+
+- Socle Remix : authentification Shopify, sessions Prisma, layout embarqué.
+- Écran de configuration marchand avec test de connexion à Djomy.
+- Tableau de bord des paiements.
+- Webhooks Shopify : conformité RGPD, désinstallation, `orders/create`.
+- Prise en charge des commandes réglées via une passerelle manuelle « Djomy ».
+- Page de paiement publique (collecte du numéro) et page de retour affichant
+  le statut réel interrogé auprès de Djomy.
+- Réception des webhooks Djomy par boutique, avec vérification de signature.
+- Réconciliation périodique et expiration des paiements sans réponse.
+
+### Vérifié
+
+- 212 tests automatisés, tous verts — 96,9 % de couverture sur la logique métier.
+- Typage sans écart, application construite avec succès.
+
+### Non vérifié
+
+- Adaptateurs Prisma et Admin API (cf. V1 dans KNOWN-ISSUES.md).
+- Aucun appel réel à Djomy (cf. V2).
+
 ## 2026-08-24 — Socle et connecteur Djomy
 
 ### Ajouté

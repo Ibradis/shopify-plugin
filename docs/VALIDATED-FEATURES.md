@@ -6,8 +6,13 @@ régression à corriger avant de poursuivre.
 
 ## Vérifié par tests automatisés — 2026-08-24
 
-Suite complète : `npm test` → **134 tests, 8 fichiers**.
-Couverture de `app/lib/` : 96,6 % des lignes, 90,2 % des branches.
+Suite complète : `npm test` → **212 tests, 12 fichiers**.
+Couverture de la logique métier : 96,9 % des lignes, 90,5 % des branches.
+
+Les adaptateurs d'entrée-sortie (`depot.server.ts`, `commandes.server.ts`) sont
+exclus de cette mesure : ils ne portent aucune décision métier et exigent une
+base et une session Shopify réelles. Ils relèvent de la recette d'intégration,
+encore à faire.
 
 ### Signature HMAC — `app/lib/djomy/signature.ts` (22 tests)
 
@@ -75,13 +80,59 @@ Couverture de `app/lib/` : 96,6 % des lignes, 90,2 % des branches.
 - Variable manquante signalée nommément, sans divulguer aucune valeur.
 - `SHOPIFY_APP_URL` imposée en https, `ENCRYPTION_KEY` de 32 octets.
 
+### Configuration marchand — `app/lib/marchand/config.ts` (21 tests)
+
+- Validation de tous les champs en un passage : chaque champ fautif est
+  signalé, pas seulement le premier.
+- Secret conservé si le champ est laissé vide lors d'une mise à jour.
+- URL non https, pays hors périmètre, liste de méthodes vide : refusés.
+- Méthodes inconnues de Djomy écartées — Djomy retomberait silencieusement sur
+  la liste complète, le marchand doit le savoir.
+- Aucun secret dans les messages d'erreur.
+
+### Service de paiement — `app/lib/paiements/service.ts` (24 tests)
+
+- Création : montant entier et numéro normalisé transmis à Djomy.
+- Idempotence : un double envoi de formulaire réutilise le paiement en cours
+  au lieu d'en créer un second.
+- Un paiement déjà abouti ou échoué ne peut pas être relancé.
+- Devise, montant et numéro validés **avant** tout appel réseau.
+- Webhook : signature invalide rejetée, rejeu neutralisé, référence inconnue
+  signalée sans échec.
+- **Un montant ou une devise divergents n'encaissent jamais** : la commande
+  reste en attente et l'écart est annoté.
+- Un `payment.success` au statut non abouti n'encaisse pas.
+- Échec, annulation, expiration : commande annotée, jamais marquée payée.
+- Payloads V1 et V2 traités à l'identique.
+
+### Prise en charge des commandes — `app/lib/paiements/commande-manuelle.ts` (21 tests)
+
+- Seules les commandes en attente réglées via une passerelle « Djomy » sont
+  prises en charge.
+- Référence de paiement non devinable : 24 caractères hexadécimaux aléatoires,
+  car elle sert de jeton d'accès à la page de paiement.
+- Téléphone récupéré par ordre de préférence pour pré-remplir le formulaire.
+
+### Réconciliation — `app/lib/paiements/reconciliation.ts` (12 tests)
+
+- Un paiement passé à `SUCCESS` est encaissé, avec le même contrôle de montant
+  que sur le webhook.
+- Djomy injoignable : le paiement reste intact, retenté au passage suivant.
+- L'échec d'un paiement n'interrompt pas le traitement du lot.
+- Expiration : commande annotée, paiement clos.
+
 ## Vérifié manuellement — 2026-08-24
 
 - `npx tsc --noEmit` : aucun écart de typage.
 - `npx prisma validate` : schéma valide.
+- `npm run build` : application construite, 32 modules côté serveur.
 
 ## Non encore vérifié
 
-Aucun appel réel à l'API Djomy n'a été effectué : les clés sandbox ne sont
-pas encore disponibles. Le format de signature des webhooks reste à
-confirmer sur un webhook réel (cf. D8 dans KNOWN-ISSUES.md).
+- **Aucun appel réel à l'API Djomy** : les clés sandbox ne sont pas encore
+  disponibles.
+- Le format de signature des webhooks reste à confirmer sur un webhook réel
+  (cf. D8 dans KNOWN-ISSUES.md).
+- Les adaptateurs Prisma et Admin API n'ont pas été exercés contre une vraie
+  base ni une vraie boutique.
+- Le parcours complet, du checkout à la commande payée, n'a pas été joué.

@@ -1,0 +1,38 @@
+# Configuration de l'application Shopify.
+#
+# `npm run config:link` rattache ce dossier à une application du Partner
+# Dashboard et renseigne `client_id` ainsi que `application_url`.
+
+name = "Djomy Mobile Money"
+handle = "djomy-mobile-money"
+# client_id = "renseigné par `shopify app config link`"
+embedded = true
+
+[access_scopes]
+scopes = "write_orders,read_orders"
+
+[auth]
+redirect_urls = [
+  "https://example.com/auth/callback",
+  "https://example.com/auth/shopify/callback",
+  "https://example.com/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2025-10"
+
+  [[webhooks.subscriptions]]
+  topics = ["app/uninstalled"]
+  uri = "/webhooks"
+
+  [[webhooks.subscriptions]]
+  topics = ["orders/create"]
+  uri = "/webhooks"
+
+  # Sujets de conformité, obligatoires pour toute application publiée.
+  [[webhooks.subscriptions]]
+  topics = ["customers/data_request", "customers/redact", "shop/redact"]
+  uri = "/webhooks"
+
+[build]
+include_config_on_deploy = true

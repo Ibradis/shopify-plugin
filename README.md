@@ -16,9 +16,11 @@ Voir le [plan d'implémentation](docs/plans/2026-08-24-djomy-shopify-payments.md
 | Normalisation des numéros de téléphone | ✅ testé |
 | Chiffrement des secrets marchands | ✅ testé |
 | Modèle de données | ✅ schéma validé |
-| App Shopify embarquée | ⏸ à faire |
-| Canal manuel réconcilié par webhook | ⏸ à faire |
-| Payments App Extension offsite | ⏸ à faire |
+| App Shopify embarquée + configuration marchand | ✅ compile, recette à faire |
+| Canal manuel : page de paiement, webhook, réconciliation | ✅ logique testée |
+| Webhooks de conformité Shopify | ✅ implémenté |
+| Recette sandbox de bout en bout | ⏸ à faire (clés Djomy requises) |
+| Payments App Extension offsite | ⏸ à faire (approbation Shopify requise) |
 
 ## Démarrage
 
@@ -46,6 +48,20 @@ npm run prisma:migrate
 | `npm run typecheck` | Vérification TypeScript |
 | `npm run config:link` | Rattache le dossier à une app du Partner Dashboard |
 | `npm run dev` | Serveur de développement Shopify |
+
+## Comment fonctionne le canal manuel
+
+1. Le marchand crée une méthode de paiement manuelle dont le nom contient
+   « Djomy » (Réglages → Paiements → Méthodes manuelles).
+2. À la commande, le webhook `orders/create` prépare un paiement et dépose le
+   lien `/pay/<référence>` en note de commande.
+3. L'acheteur ouvre ce lien, saisit son numéro, puis est redirigé vers le
+   portail Djomy.
+4. Le webhook Djomy confirme le paiement ; la commande passe en payée.
+5. Un passage de réconciliation rattrape les webhooks perdus.
+
+L'URL de webhook à renseigner côté Djomy est affichée dans l'écran de
+configuration de l'application.
 
 ## Documentation
 
