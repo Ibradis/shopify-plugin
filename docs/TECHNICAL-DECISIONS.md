@@ -67,6 +67,25 @@ délai réel, aucune dépendance à un serveur simulé.
 statut `SUCCESS` ou `CAPTURED`. Une incohérence entre les deux n'autorise pas
 l'encaissement.
 
+## D-009 — Aucun rejeu automatique sur la création d'un paiement
+
+**Date :** 2026-08-24 · **Statut :** actée · **Origine :** vérification sandbox
+
+Deux constats faits contre l'API réelle :
+
+- Djomy n'applique aucune idempotence sur `merchantPaymentReference` : deux
+  appels identiques créent deux transactions (D11).
+- Une erreur de validation peut remonter en HTTP 500, indiscernable d'une
+  panne réelle (D10).
+
+Rejouer automatiquement une création exposerait donc à un double débit.
+`createGatewayPayment` et `createDirectPayment` s'exécutent en une seule
+tentative. L'authentification et les lectures de statut, sans effet de bord,
+conservent leurs trois tentatives.
+
+**Écarté :** conserver un rejeu uniforme — plus simple à lire, mais le prix
+d'un double débit chez un acheteur n'est pas une simplification acceptable.
+
 ## D-008 — Reprise sur 401 hors quota de rejeu
 
 **Date :** 2026-08-24 · **Statut :** actée

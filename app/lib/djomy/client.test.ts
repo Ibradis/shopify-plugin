@@ -225,27 +225,44 @@ describe("createGatewayPayment", () => {
     await expect(client.createGatewayPayment(COMMANDE)).rejects.toThrow(DjomyApiError);
   });
 
-  it("rejoue un 429 avec un backoff exponentiel", async () => {
-    const { client, attentes } = creerClient([
+  it("ne rejoue jamais une création de paiement sur 429", async () => {
+    // Djomy n'applique aucune idempotence sur merchantPaymentReference :
+    // rejouer une création exposerait à un double débit.
+    const { client, appels, attentes } = creerClient([
       REPONSE_AUTH,
       () => json({ success: false, error: { message: "trop de requêtes" } }, 429),
       REPONSE_PAIEMENT,
     ]);
 
-    await expect(client.createGatewayPayment(COMMANDE)).resolves.toBeTruthy();
-    expect(attentes).toEqual([1000]);
+    await expect(client.createGatewayPayment(COMMANDE)).rejects.toThrow(DjomyApiError);
+    expect(appels).toHaveLength(2);
+    expect(attentes).toEqual([]);
   });
 
-  it("rejoue une erreur 500 puis abandonne au bout de 3 tentatives", async () => {
-    const { client, attentes, appels } = creerClient([
+  it("ne rejoue jamais une création de paiement sur 500", async () => {
+    const { client, appels } = creerClient([
       REPONSE_AUTH,
       () => json({ success: false, error: { message: "boom" } }, 500),
     ]);
 
     await expect(client.createGatewayPayment(COMMANDE)).rejects.toThrow(DjomyApiError);
-    expect(attentes).toEqual([1000, 2000]);
-    // 1 auth + 3 tentatives de paiement
-    expect(appels).toHaveLength(4);
+    expect(appels).toHaveLength(2);
+  });
+
+  it("ne rejoue jamais une création de paiement sur panne réseau", async () => {
+    // Le paiement a peut-être été créé côté Djomy avant la coupure : rejouer
+    // en créerait un second.
+    const { client, appels } = creerClient([
+      REPONSE_AUTH,
+      () => {
+        throw new TypeError("fetch failed");
+      },
+    ]);
+
+    await expect(client.createGatewayPayment(COMMANDE)).rejects.toThrow(
+      DjomyNetworkError,
+    );
+    expect(appels).toHaveLength(2);
   });
 
   it("ne rejoue jamais un 400 : le corps de la requête est en cause", async () => {
@@ -281,20 +298,6 @@ describe("createGatewayPayment", () => {
     await expect(client.createGatewayPayment(COMMANDE)).rejects.toThrow(
       /montant trop faible/,
     );
-  });
-
-  it("rejoue une panne réseau puis abandonne en DjomyNetworkError", async () => {
-    const { client, attentes } = creerClient([
-      REPONSE_AUTH,
-      () => {
-        throw new TypeError("fetch failed");
-      },
-    ]);
-
-    await expect(client.createGatewayPayment(COMMANDE)).rejects.toThrow(
-      DjomyNetworkError,
-    );
-    expect(attentes).toEqual([1000, 2000]);
   });
 
   it("signale une réponse 2xx sans champ data", async () => {
@@ -354,6 +357,42 @@ describe("getPaymentStatus", () => {
     expect(appels[1]?.methode).toBe("GET");
     expect(appels[1]?.url).toBe(`${BASE}/v1/payments/tx-1/status`);
     expect(appels[1]?.corps).toBeUndefined();
+  });
+
+  it("rejoue un 429 avec un backoff exponentiel", async () => {
+    // Consulter un statut est sans effet de bord : le rejeu est sûr.
+    const { client, attentes } = creerClient([
+      REPONSE_AUTH,
+      () => json({ success: false, error: { message: "trop de requêtes" } }, 429),
+      () => json({ success: true, data: { transactionId: "tx-1", status: "SUCCESS" } }),
+    ]);
+
+    await expect(client.getPaymentStatus("tx-1")).resolves.toBeTruthy();
+    expect(attentes).toEqual([1000]);
+  });
+
+  it("rejoue une erreur 500 puis abandonne au bout de 3 tentatives", async () => {
+    const { client, attentes, appels } = creerClient([
+      REPONSE_AUTH,
+      () => json({ success: false, error: { message: "boom" } }, 500),
+    ]);
+
+    await expect(client.getPaymentStatus("tx-1")).rejects.toThrow(DjomyApiError);
+    expect(attentes).toEqual([1000, 2000]);
+    // 1 auth + 3 tentatives de lecture
+    expect(appels).toHaveLength(4);
+  });
+
+  it("rejoue une panne réseau puis abandonne en DjomyNetworkError", async () => {
+    const { client, attentes } = creerClient([
+      REPONSE_AUTH,
+      () => {
+        throw new TypeError("fetch failed");
+      },
+    ]);
+
+    await expect(client.getPaymentStatus("tx-1")).rejects.toThrow(DjomyNetworkError);
+    expect(attentes).toEqual([1000, 2000]);
   });
 
   it("encode l'identifiant dans l'URL", async () => {

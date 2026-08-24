@@ -127,12 +127,37 @@ encore à faire.
 - `npx prisma validate` : schéma valide.
 - `npm run build` : application construite, 32 modules côté serveur.
 
+## Vérifié contre l'API Djomy réelle — 2026-08-24
+
+`npm run verify:sandbox` → **12 tests, tous verts**, contre
+`sandbox-api.djomy.africa`.
+
+- **Authentification HMAC validée en conditions réelles** : l'en-tête
+  `X-API-KEY: <clientId>:<HMAC_SHA256(clientId, clientSecret)>` est accepté,
+  `POST /v1/auth` renvoie un jeton de 402 caractères.
+- Un secret erroné est bien rejeté par Djomy.
+- Jeton mis en cache et réutilisé entre deux appels.
+- **Création d'un paiement avec redirection réussie** : `POST
+  /v1/payments/gateway` renvoie un `transactionId`, un statut `CREATED` et une
+  URL de redirection (`https://sandbox.djomy.africa/c/…`).
+- **Consultation du statut conforme à nos types** : `transactionId`, `status`,
+  `paidAmount`, `payerIdentifier`, `merchantPaymentReference`, `currency`,
+  `createdAt`, `allowedPaymentMethods`, `metadata` — tous présents et du type
+  attendu.
+- Les métadonnées transmises sont bien restituées.
+- Une transaction inexistante est signalée par une erreur.
+- Le numéro du payeur n'apparaît jamais en entier dans les journaux.
+
+Trois écarts de comportement de Djomy ont été constatés à cette occasion et
+consignés : D9, D10 et D11 dans KNOWN-ISSUES.md. D11 a entraîné une correction
+du client (décision D-009).
+
 ## Non encore vérifié
 
-- **Aucun appel réel à l'API Djomy** : les clés sandbox ne sont pas encore
-  disponibles.
 - Le format de signature des webhooks reste à confirmer sur un webhook réel
-  (cf. D8 dans KNOWN-ISSUES.md).
+  (cf. D8) : impossible sans URL publique recevant une notification Djomy.
+- Les adaptateurs Prisma et Admin API (cf. V1).
+- Le parcours complet, du checkout à la commande payée.
 - Les adaptateurs Prisma et Admin API n'ont pas été exercés contre une vraie
   base ni une vraie boutique.
 - Le parcours complet, du checkout à la commande payée, n'a pas été joué.

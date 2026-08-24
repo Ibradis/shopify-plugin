@@ -135,6 +135,7 @@ export class DjomyClient {
     return this.requete<CreatedPaymentDto>("/v1/payments/gateway", {
       methode: "POST",
       corps: commande,
+      rejouable: false,
     });
   }
 
@@ -154,6 +155,7 @@ export class DjomyClient {
     return this.requete<CreatedPaymentDto>("/v1/payments", {
       methode: "POST",
       corps: commande,
+      rejouable: false,
     });
   }
 
@@ -184,9 +186,20 @@ export class DjomyClient {
       methode: "GET" | "POST";
       corps?: unknown;
       avecBearer?: boolean;
+      /**
+       * Faux pour les opérations qui créent un paiement.
+       *
+       * Vérifié sur le bac à sable : Djomy n'applique aucune idempotence sur
+       * `merchantPaymentReference` — deux appels identiques créent deux
+       * transactions distinctes. Et une erreur de validation peut remonter en
+       * HTTP 500, indiscernable d'une panne. Rejouer automatiquement une
+       * création exposerait donc à un double débit.
+       */
+      rejouable?: boolean;
     },
   ): Promise<T> {
     const avecBearer = options.avecBearer !== false;
+    const maxTentatives = options.rejouable === false ? 1 : this.maxTentatives;
     let reauthFaite = false;
     // La ré-authentification après un 401 ne consomme pas de tentative :
     // ce n'est pas un échec transitoire du service, c'est un jeton périmé.
@@ -199,7 +212,7 @@ export class DjomyClient {
         reponse = await this.envoyer(endpoint, options, avecBearer);
       } catch (erreur) {
         const echec = new DjomyNetworkError(endpoint, erreur);
-        if (tentative >= this.maxTentatives) throw echec;
+        if (tentative >= maxTentatives) throw echec;
         await this.attendreAvantRejeu(tentative, endpoint, "reseau");
         tentative++;
         continue;
@@ -216,7 +229,7 @@ export class DjomyClient {
       if (reponse.ok) return this.lireDonnees<T>(endpoint, reponse);
 
       const erreur = await this.lireErreur(endpoint, reponse);
-      if (!erreur.estRejouable || tentative >= this.maxTentatives) throw erreur;
+      if (!erreur.estRejouable || tentative >= maxTentatives) throw erreur;
       await this.attendreAvantRejeu(tentative, endpoint, `http-${reponse.status}`);
       tentative++;
     }

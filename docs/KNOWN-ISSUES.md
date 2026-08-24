@@ -1,5 +1,44 @@
 # Points ouverts
 
+## Constaté sur le bac à sable — 2026-08-24
+
+Vérifié par `npm run verify:sandbox` contre `sandbox-api.djomy.africa`.
+
+### D11 — Djomy n'applique aucune idempotence sur `merchantPaymentReference` ⚠
+
+Deux appels successifs avec la **même** référence marchand créent **deux
+transactions distinctes** :
+
+```
+4fb3caee-f83d-4ca1-95b2-79e0eab11151
+6fcb4aab-7350-4b2c-97f2-96c6d1d5ab94
+```
+
+Aucun endpoint ne permet de retrouver une transaction par sa référence
+marchand : impossible de dédupliquer après coup.
+
+**Conséquence retenue :** le client ne rejoue **jamais** une création de
+paiement, même sur panne réseau ou 500 (cf. décision D-009). Les lectures et
+l'authentification restent rejouées.
+
+**Risque résiduel :** si la réponse se perd après création côté Djomy, une
+nouvelle tentative de l'acheteur créera une seconde transaction. Seule une
+idempotence côté Djomy pourrait le supprimer — question Q7.
+
+### D10 — Erreurs de validation remontées en HTTP 500
+
+Un `countryCode` inconnu produit un `500`, pas un `400`. Une erreur de saisie
+est donc indiscernable d'une panne du service, ce qui rend tout rejeu
+automatique dangereux sur les écritures. Contribue à la décision D-009.
+
+### D9 — Djomy accepte un montant négatif
+
+`amount: -100` a été accepté et le paiement créé
+(`88e97c2d-36a6-40d8-ba0f-257d57d101c0`), avec une URL de redirection valide.
+
+Notre `toDjomyAmount` refuse les montants nuls ou négatifs : le chemin normal
+de l'application ne peut pas produire ce cas. À signaler à Djomy.
+
 ## Bloquants pour la mise en production
 
 ### D1 — Aucune API de remboursement chez Djomy
@@ -86,3 +125,6 @@ et astreinte.
 | Q4 | Limites de débit et politique de rejeu ? | ⏸ à poser |
 | Q5 | `payerNumber` factice accepté si paiement par carte ? | ⏸ à poser |
 | Q6 | Délai avant `payment.timeout` ? Annulation possible ? | ⏸ à poser |
+| Q7 | Une idempotence sur `merchantPaymentReference` est-elle prévue ? (D11) | 🔴 prioritaire |
+| Q8 | Pourquoi un `countryCode` invalide renvoie-t-il 500 et non 400 ? (D10) | ⏸ à poser |
+| Q9 | Les montants négatifs seront-ils rejetés côté Djomy ? (D9) | ⏸ à poser |

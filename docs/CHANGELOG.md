@@ -1,5 +1,32 @@
 # Journal des modifications
 
+## 2026-08-24 — Vérification contre le bac à sable Djomy
+
+### Ajouté
+
+- Suite de vérification d'intégration (`npm run verify:sandbox`), séparée de la
+  suite unitaire car elle sort sur le réseau.
+
+### Modifié
+
+- **Le client ne rejoue plus une création de paiement**, quelle que soit la
+  cause de l'échec. Djomy n'applique aucune idempotence sur
+  `merchantPaymentReference` : un rejeu créerait une seconde transaction.
+  Authentification et lectures conservent leurs rejeux (décision D-009).
+
+### Vérifié
+
+- 12 tests d'intégration verts contre `sandbox-api.djomy.africa` :
+  authentification HMAC, création de paiement avec redirection, consultation
+  de statut, rejet d'un secret erroné.
+- 215 tests unitaires verts.
+
+### Constaté chez Djomy
+
+- D11 : aucune idempotence sur la référence marchand.
+- D10 : erreurs de validation remontées en HTTP 500 au lieu de 400.
+- D9 : montants négatifs acceptés.
+
 ## 2026-08-24 — Application Shopify et canal manuel
 
 ### Ajouté

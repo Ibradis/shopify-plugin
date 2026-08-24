@@ -10,7 +10,9 @@ Voir le [plan d'implémentation](docs/plans/2026-08-24-djomy-shopify-payments.md
 
 | Brique | État |
 | --- | --- |
-| Signature HMAC et vérification des webhooks | ✅ testé |
+| Authentification HMAC | ✅ **validée contre l'API réelle** |
+| Création de paiement et consultation de statut | ✅ **validées contre l'API réelle** |
+| Vérification des signatures de webhook | ✅ testé (format à confirmer, D8) |
 | Client HTTP Djomy (jeton, rejeux, erreurs typées) | ✅ testé |
 | Conversion montants et devises | ✅ testé |
 | Normalisation des numéros de téléphone | ✅ testé |
@@ -43,7 +45,8 @@ npm run prisma:migrate
 
 | Commande | Effet |
 | --- | --- |
-| `npm test` | Suite de tests |
+| `npm test` | Suite de tests unitaires |
+| `npm run verify:sandbox` | Vérification contre l'API Djomy réelle (réseau) |
 | `npm run test:coverage` | Tests + couverture |
 | `npm run typecheck` | Vérification TypeScript |
 | `npm run config:link` | Rattache le dossier à une app du Partner Dashboard |
