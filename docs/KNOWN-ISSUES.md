@@ -1,5 +1,38 @@
 # Points ouverts
 
+## D8 — Format de signature des webhooks : outillage prêt, confirmation en attente
+
+La documentation Djomy indique un en-tête `X-Webhook-Signature: v1:<signature>`
+sans préciser la chaîne signée. Notre implémentation retient
+`HMAC_SHA256(corps_brut, clientSecret)` en hexadécimal — hypothèse la plus
+probable, non confirmée.
+
+**Outillage en place :** `npm run capture:webhook` démarre un serveur de
+capture et l'expose sur une URL publique via cloudflared. À la réception d'un
+webhook, il confronte la signature reçue à treize hypothèses (corps brut, corps
+re-sérialisé, clé = clientId, préfixage par timestamp ou eventId, encodage
+base64, SHA-256 simple…) et désigne celle qui correspond.
+
+Chaîne vérifiée de bout en bout le 2026-08-24 : requête entrante depuis
+Internet → tunnel Cloudflare → serveur de capture → formule identifiée.
+Il ne manque qu'un webhook émis par Djomy lui-même.
+
+**Ce qu'il reste à faire :**
+
+1. `npm run capture:webhook` — laisser tourner.
+2. Coller l'URL affichée dans l'espace développeur Djomy, rubrique webhooks.
+3. `npm run verify:sandbox` dans un second terminal, puis régler le paiement
+   sur l'URL de redirection obtenue.
+4. Lire la conclusion affichée par le serveur de capture.
+
+Si la formule diffère de l'hypothèse actuelle, corriger `verifyWebhookSignature`
+dans [`app/lib/djomy/signature.ts`](../app/lib/djomy/signature.ts) et rejouer
+toute la suite de tests.
+
+⚠️ L'URL du tunnel est éphémère : elle change à chaque lancement et cesse de
+répondre dès l'arrêt du script. Ne pas la laisser configurée chez Djomy
+au-delà du diagnostic.
+
 ## Constaté sur le bac à sable — 2026-08-24
 
 Vérifié par `npm run verify:sandbox` contre `sandbox-api.djomy.africa`.

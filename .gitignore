@@ -12,3 +12,4 @@ prisma/dev.sqlite-journal
 coverage
 .DS_Store
 *.log
+verification/captures/

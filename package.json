@@ -20,7 +20,8 @@
     "test:coverage": "vitest run --coverage",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "setup": "prisma generate && prisma migrate deploy"
+    "setup": "prisma generate && prisma migrate deploy",
+    "capture:webhook": "bash verification/capture-webhook.sh"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",

@@ -47,6 +47,7 @@ npm run prisma:migrate
 | --- | --- |
 | `npm test` | Suite de tests unitaires |
 | `npm run verify:sandbox` | Vérification contre l'API Djomy réelle (réseau) |
+| `npm run capture:webhook` | Capture un webhook Djomy réel et identifie sa signature |
 | `npm run test:coverage` | Tests + couverture |
 | `npm run typecheck` | Vérification TypeScript |
 | `npm run config:link` | Rattache le dossier à une app du Partner Dashboard |
