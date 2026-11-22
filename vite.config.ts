@@ -4,6 +4,13 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 // Node 20+ fournit fetch nativement : aucun polyfill à installer.
 
+// En `shopify app dev`, le CLI transmet l'URL du tunnel dans HOST : elle
+// prime sur la valeur du .env.
+if (process.env.HOST?.startsWith("https://")) {
+  process.env.SHOPIFY_APP_URL = process.env.HOST;
+  delete process.env.HOST;
+}
+
 export default defineConfig({
   server: {
     port: Number(process.env.PORT ?? 3000),

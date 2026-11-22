@@ -1,38 +1,31 @@
-# Configuration de l'application Shopify.
-#
-# `npm run config:link` rattache ce dossier à une application du Partner
-# Dashboard et renseigne `client_id` ainsi que `application_url`.
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-name = "Djomy Mobile Money"
+name = "djomy-api"
 handle = "djomy-mobile-money"
-# client_id = "renseigné par `shopify app config link`"
 embedded = true
+client_id = "7f5ed09da3fb12b0b2b2fe38eddc04e1"
+application_url = "https://shopify.dev/apps/default-app-home"
 
 [access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "write_orders,read_orders"
 
 [auth]
-redirect_urls = [
-  "https://example.com/auth/callback",
-  "https://example.com/auth/shopify/callback",
-  "https://example.com/api/auth/callback"
-]
+redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
 
 [webhooks]
-api_version = "2025-10"
+api_version = "2026-10"
 
   [[webhooks.subscriptions]]
-  topics = ["app/uninstalled"]
   uri = "/webhooks"
-
-  [[webhooks.subscriptions]]
-  topics = ["orders/create"]
-  uri = "/webhooks"
-
-  # Sujets de conformité, obligatoires pour toute application publiée.
-  [[webhooks.subscriptions]]
-  topics = ["customers/data_request", "customers/redact", "shop/redact"]
-  uri = "/webhooks"
+  topics = [
+  "app/uninstalled",
+  "orders/create",
+  "customers/data_request",
+  "customers/redact",
+  "shop/redact"
+]
 
 [build]
 include_config_on_deploy = true
+automatically_update_urls_on_dev = true
